@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PureCam – No AI Camera</title>
+  <style>
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      color: #fff;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    video, canvas {
+      width: 90%;
+      max-width: 480px;
+      border-radius: 12px;
+      margin: 10px 0;
+      background: #000;
+    }
+    button {
+      background: #0a84ff;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      padding: 10px 16px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0071e3;
+    }
+  </style>
+</head>
+<body>
+  <h2>📸 PureCam (No AI Processing)</h2>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <button id="capture">Take Photo</button>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const captureBtn = document.getElementById('capture');
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false
+        });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Camera access failed: " + err.message);
+      }
+    }
+
+    async function capturePhoto() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const file = new File([blob], 'purecam-photo.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'PureCam Photo',
+            text: 'Taken without AI enhancements 📸'
+          });
+        } catch (err) {
+          console.log('Share canceled or failed:', err);
+        }
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'purecam-photo.png';
+        a.click();
+      }
+    }
+
+    captureBtn.onclick = capturePhoto;
+    startCamera();
+  </script>
+</body>
+</html>
